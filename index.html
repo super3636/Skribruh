@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>    
+    <meta charset="UTF-8">
+	<title>Skribruh</title>
+	<link rel="icon" type="image/png" href="/storage/img/icon.jpg"/>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/10.16.6/sweetalert2.css">
+	<link rel="stylesheet" href="/css/index.css">
+	<meta content="width=device-width, initial-scale=1" name="viewport" />
+     <link rel="stylesheet" href="/css/home/index.css">
+</head>
+
+<body>
+	<div class="header">
+			<img class="logo" src="/storage/img/logo.gif">
+	</div>
+    <div class="content">
+        <form class="user-form">
+            <input class="user-name form-control" type="text">
+            <button class="btn btn-primary">Play!</button>
+        </div>
+
+    </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/10.16.6/sweetalert2.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script src="/js/index.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var socket = io();
+  const content = document.querySelector(".content");
+  const userForm = document.querySelector(".user-form");
+  const userInput = document.querySelector(".user-name");
+  userForm.addEventListener("submit",(e)=>{
+    e.preventDefault();
+    const userName=userInput.value; 
+    socket.emit('new-user',{
+      name:userName
+    })
+  })
+  socket.on("loading",()=>{
+  	content.innerHTML = "<div class='lds-hourglass'></div>"
+  })
+  socket.on("enter",()=>{
+  	let html = '<div class="word-container">----</div><div class="play-container"><div class="left"></div><div class="center"><canvas class="whiteboard"></canvas><div class="colors"><div class="color black"></div><div class="color yellow"></div><div class="color red"></div><div class="color blue"></div><div class="color green"></div><div class="color lightblue"></div><div class="color orange"></div></div></div><div class="right"><div id="messages"></div><form id="form" action=""><input id="input" class="form-control"/></form></div></div>';
+  		content.innerHTML = html;
+  		const chatForm = document.querySelector("#form");
+  		const chatMes = document.querySelector("#input");
+  		const messages = document.querySelector("#messages");
+  		const center = document.querySelector(".center");
+  		const canvas = document.getElementsByClassName("whiteboard")[0];
+  		var context = canvas.getContext('2d');
+  		let rect = canvas.getBoundingClientRect();
+  		const colors = document.getElementsByClassName("color");
+  		var current = {
+    		color: 'black'
+  		};
+  		canvas.addEventListener('mousedown', onMouseDown, false);
+  		canvas.addEventListener('mouseup', onMouseUp, false);
+  		canvas.addEventListener('mouseout', onMouseUp, false);
+  		canvas.addEventListener('mousemove', throttle(onMouseMove, 10), false);
+  		var drawing = false;
+  		canvas.addEventListener('touchstart', onMouseDown, false);
+  		canvas.addEventListener('touchend', onMouseUp, false);
+ 		canvas.addEventListener('touchcancel', onMouseUp, false);
+  		canvas.addEventListener('touchmove', throttle(onMouseMove, 10), false);
+  		socket.on('drawing', onDrawingEvent);
+  		for (var i = 0; i < colors.length; i++){
+    		colors[i].addEventListener('click', onColorUpdate, false);
+ 		}
+
+  	window.addEventListener('resize', onResize, false);
+  	onResize();
+  	
+  	function drawLine(x0, y0, x1, y1, color, emit){
+  		let x2 = x0 - rect.left;
+  		let y2 = y0 - rect.top;
+  		let x3 = x1 - rect.left;
+  		let y3 = y1 - rect.top;
+    	context.beginPath();
+    	context.moveTo(x2, y2);
+    	context.lineTo(x3, y3);
+    	context.strokeStyle = color;
+    	context.lineWidth = 2;
+    	context.stroke();
+    	context.closePath();
+    	if (!emit) { return; }
+    	var w = canvas.width;
+    	var h = canvas.height;
+    	socket.emit('drawing', {
+      		x0: x0 / w,
+      		y0: y0 / h,
+      		x1: x1 / w,
+      		y1: y1 / h,
+      		color: color
+    	});
+  }
+  function onMouseDown(e){
+    drawing = true;
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY;
+  }
+
+  function onMouseUp(e){
+    if (!drawing) { return; }
+    drawing = false;
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, true);
+  }
+
+  function onMouseMove(e){
+    if (!drawing) { return; }
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, true);
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY;
+  }
+
+  function onColorUpdate(e){
+    current.color = e.target.className.split(' ')[1];
+  }
+
+  // limit the number of events per second
+  function throttle(callback, delay) {
+    var previousCall = new Date().getTime();
+    return function() {
+      var time = new Date().getTime();
+
+      if ((time - previousCall) >= delay) {
+        previousCall = time;
+        callback.apply(null, arguments);
+      }
+    };
+  }
+
+  function onDrawingEvent(data){
+    var w = canvas.width;
+    var h = canvas.height;
+    drawLine(data.x0 * w, data.y0 * h, data.x1 * w, data.y1 * h, data.color);
+  }
+
+  // make the canvas fill its parent
+  function onResize() {
+  	rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+  }
+  		chatForm.addEventListener("submit",(e)=>{
+    		e.preventDefault();
+    		const message = chatMes.value;
+    		chatMes.value="";
+    		socket.emit('on-chat',message);
+    	})
+  socket.on("user-chat",(data)=>{
+  	let {user_name,message} = data;
+    const messageItem = document.createElement("p");
+    messageItem.textContent = `${user_name}: ${message}`;
+    messages.appendChild(messageItem);
+  })
+  socket.on("join-lobby",(message)=>{
+  	   const messageItem = document.createElement("p");
+  	   messageItem.textContent = message;
+  	    messages.appendChild(messageItem);
+  })
+  socket.on("disconnected",(message)=>{
+  	   const messageItem = document.createElement("p");
+  	   messageItem.textContent = message;
+  	   messages.appendChild(messageItem);
+  })
+ })
+</script>
+</html>

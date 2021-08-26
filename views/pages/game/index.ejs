@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>    
+    <%- include('../../partials/head')%>
+     <link rel="stylesheet" href="/css/home/index.css">
+</head>
+
+<body>
+    <div class="content">
+    <form id ="chat-form">
+       <input class="form-control" type="text"id="chat-mes">
+       <button id="send-chat">Gửi</button>
+   </form>
+
+    </div>
+</body>
+<%- include('../../partials/foot') %>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const chatForm = document.querySelector("#chat-form");
+    const chatMes = document.querySelector("#chat-mes");
+    chatForm.addEventListener('submit',(e) => {
+      e.preventDefault();
+      const message = chatMes.value;
+      socket.emit('on-chat',{message:message});
+    });
+</script>
+</html>

@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
     let user = {user_id:socket_id,user_name,color:users_colors[index],image:users_images[index],point:0};
     let start=false;
     rooms.data.forEach(room=>{
-      if(room.lobby.length<3)
+      if(room.lobby.length<9)
       {
         start = room.start;
         flag = 1;

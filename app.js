@@ -36,140 +36,378 @@ app.get('/', (req, res) => {
 });
 
 
-const users = {};
 //const lobby = [];
-const rooms = {data:[]};
+const rooms = {};
 const mapping = {};
 const users_colors = ["black","orange","lightblue","red","lightgreen","#232223","cyan","grey"];
 const users_images = ["player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif"];
-const words = ["bird","dog","cat","bat","lion","pencil","smile","sleep","fly","optopus","shoe","mask","punch","ice cream","fox","toilet","penquin","chicken","plane","winter","sun","mountain","fish","butter","baseball","soccer","swimming","pillow","jacket","window","cry","cloud","Statue of Liberty","Eiffel Tower","Table Tennis"];
+const words = ["bird","dog","cat","bat","lion","pencil","smile","sleep","fly","optopus","shoe","mask","punch","ice cream","fox","toilet","penquin","chicken","plane","winter","sun","mountain","fish","butter","baseball","soccer","swimming","pillow","jacket","window","cry","cloud","Statue of Liberty","Eiffel Tower","Table Tennis","apple","banana","cherry","kite","towel","beach","bench","library","book","net","map","art","internet","president","math","police","fire fighter","surfing","waiter","boss","rose"];
 io.on('connection', (socket) => {
   let socket_id = socket.id;
   socket.on("on-chat",message=>{
-    let user = users[socket_id];
     let room_id = mapping[socket_id];
-    let correct_word = "";
-    rooms.data.forEach(room=>{
-      if(room.id==room_id)
-      {
-        correct_word = room.word;
-      }
-    })
-    if(message==correct_word)
+    let room = rooms[room_id];
+    let scores = room.scores;
+    let user = findUser(room,socket_id);
+    let correct_word = rooms[room_id].word;
+    if(user.drawing)
     {
-      io.to(room_id).emit('correct-answer',user);
+       io.to(socket_id).emit('user-chat',{user_name:user.user_name,message:`Cannot chat when drawing`}); 
     }
     else{
-      io.to(room_id).emit('user-chat',{user_name:user.user_name,message});
-    }
-  })
-  socket.on("new-user",async(data)=>{
-    io.to(socket_id).emit('loading'); 
-    let user_name = data.name;
-    let message = `${user_name} has join lobby`;
-    let flag = 0;
-    let room_id = "";
-    let lobby = [];
-    let index = Object.keys(users).length;
-    let user = {user_id:socket_id,user_name,color:users_colors[index],image:users_images[index],point:0};
-    let start=false;
-    rooms.data.forEach(room=>{
-      if(room.lobby.length<9)
-      {
-        start = room.start;
-        flag = 1;
-        room_id = room.id;
-        room.lobby.push(user);
-        lobby=room.lobby;
-        return;
+    if(message.toLowerCase()==correct_word.toLowerCase()&&correct_word!="")
+    {
+      let exists = false;
+      scores.forEach(item=>{
+        if(item.user_id == user.user_id)
+        {
+          exists = true;
+          return;
+        }
+      })
+      if(!exists)
+      { 
+          scores.push(user.user_id);
+          let place = scores.length;
+          io.to(room_id).emit('correct-answer',user);
+          if(room.lobby.length==place+1)
+          {
+            room.round_end=true;
+            roundResult(room_id,io,socket);
+          }
       }
-    })
-    if(!flag)
+    }
+    else{
+      if(message.length==correct_word.length)
+      {
+        if(isClose(message.toLowerCase(),correct_word.toLowerCase()))
+        {
+           io.to(socket_id).emit('close-word',message);
+        }
+      }
+      else{
+        io.to(room_id).emit('user-chat',{user_name:user.user_name,message});
+      }
+    }
+  }
+  })
+  
+
+
+
+  socket.on("new-user",user_name=>{
+    if(user_name.trim()==""||user_name.trim().length<3)
+    {
+      io.to(socket_id).emit("alert","name must have aleast 3 characters");
+      return;
+    }
+    io.to(socket_id).emit('loading'); 
+    let flag = 0;
+    let user = {user_id:socket_id,user_name,color:"black",image:"player-1.gif",point:0,drawing:false};
+    let room = {};
+    for(let key in rooms)
+    {
+      let room_item = rooms[key];
+      if(room_item.lobby&&room_item.lobby.length<9)
+      {
+        user.rank = userRank(room_item.lobby);
+        room_item.lobby.push(user);
+        room=room_item;
+      }
+    }
+    if(isEmpty(room))
     {
       room_id = randomId();
-      lobby = [user];
-      rooms.data.push({id:room_id,start:false,lobby});
+      lobby = [{...user,rank:1}];
+      room = {id:room_id,time:"30",round:"1",canvas:[],scores:[],word:"",lobby,start:false,vote_kick:[]};
+      rooms[room_id]=room;
     }
-    lobby= userRank(lobby);
-    socket.join(room_id);
-    mapping[socket_id]=room_id;
-    users[socket_id] = user;   
-    io.to(socket_id).emit('enter'); 
-    io.to(room_id).emit("join-lobby",{user,lobby});
-    if(lobby.length>0)
+    //room.lobby= lobbyRank(room.lobby);
+    socket.join(room.id);
+    mapping[socket_id]=room.id;  
+    let canvas_data = room.canvas;
+    let word = room.word.replace(/[a-zA-Z0-9]/g,"-");
+    io.to(socket_id).emit('enter',{room:{...room,word},user,canvas_data});
+    if(room.start&&room.word=="")
     {
-      let room_master = lobby[0];
-      io.to(room_master.user_id).emit("get-canvas",socket_id);
+      let user_draw = findUserDrawing(room.id);
+      io.to(socket_id).emit("wait-choose-word",user_draw.user_name);
     }
-    // lobby.push(user); 
-   
-
-    // io.emit("join-lobby",{user,lobby});
-    if(lobby.length>1&&!start)
-    {
-      start = true;
-      let words_clone = [...words];
-      let choose = [];
-      for(let i = 1;i<=3 ;i++)
-      {
-        let word = words_clone[Math.floor(Math.random()*words_clone.length)];
-        choose.push(word);
-        words_clone.splice(words_clone.indexOf(word),1);
-      }
-      //io.emit("start-game");
-      let user_draw = lobby[lobby.length-1];
-      io.to(user_draw.user_id).emit("choose-word",choose);
-      io.to(room_id).emit("wait-choose-word",user_draw.user_name);
-    }
+    socket.broadcast.to(room.id).emit("join-lobby",user);
+    startGame(room,io,socket);
   })
-  socket.on("choose-word",word=>{
+  socket.on("choose-word",word=>{      
     let room_id = mapping[socket_id];
-    let space = [];
-    for(let i =0;i<word.length;i++)
-    {
-      if(word[i]==" ")
-      {
-        space.push(i);
-      }
-    }
-    rooms.data.forEach(room=>{
-      if(room.id==room_id)
-      {
-        room.word= word;
-        return;
-      }
-    })
-    io.to(socket_id).emit("draw-word",word);
-    socket.broadcast.to(room_id).emit("guess-word",{word_length:word.length,space});
+
+    startDrawing(room_id,socket_id,word,io,socket);
   })
 
-  socket.on("send-canvas",data=>{
-    let {user_id,canvasUrl} = data;
-    io.to(user_id).emit("receive-canvas",canvasUrl);
-  })
   socket.on('drawing', (data) => {
     let room_id = mapping[socket_id];
-    socket.broadcast.to(room_id).emit('drawing', data);
+    let room = rooms[room_id]
+    let user = findUser(room,socket_id);
+    if(user.drawing)
+    {
+      room.canvas.push(data);
+      socket.broadcast.to(room_id).emit('drawing', data);
+    }
   });
 
-  socket.on("disconnect",function(socket){
-    let user = users[socket_id];
+  socket.on('vote-kick',()=>{
     let room_id = mapping[socket_id];
-    delete mapping[socket_id];
-    rooms.data.forEach(room=>{
-      if(room.id==room_id)
+    let room = rooms[room_id];
+    let user = findUser(room,socket_id);
+    if(!user.drawing)
+    {
+      let vote_kick = room.vote_kick;
+      if(vote_kick.indexOf(user.user_id)==-1)
       {
-        room.lobby.splice(room.lobby.indexOf(user),1);
-        return;
+        vote_kick.push(user.user_id);
+        let room_length = room.lobby.length;
+        let votes_need = Math.ceil((room_length/2)+0.5);
+        io.to(room.id).emit("vote-kick",{user_name:user.user_name,votes:vote_kick.length,votes_need});
+        if(vote_kick.length>=votes_need)
+        {
+          let user_drawing = findUserDrawing(room.id);
+          let index = room.lobby.indexOf(user_drawing);
+          io.to(user_drawing.user_id).emit("kicked",user_drawing.user_name);
+          io.to(room.id).emit("kick-success",user_drawing);
+          delete mapping[user_drawing.user_id];
+          room.lobby.splice(room.lobby.indexOf(user_drawing),1);
+          switchTurn(room.id,index,io,socket);
+        }
       }
-    })
-    delete users[socket_id];
-    //io.emit("disconnected",`${user.user_name} has left the room`);
-     io.to(room_id).emit("disconnected",socket_id);
+    }
+  })
+  socket.on("disconnect",function(socket){
+    let room_id = mapping[socket_id];
+    if(isEmpty(room_id))
+    {
+      return;
+    }
+    let room = rooms[room_id];
+    let user = findUser(room,socket_id);
+    if(user.drawing)
+    {
+      if(room.word)
+      {
+        roundResult(room_id,io,socket);
+      }
+      else{
+          let index = room.lobby.indexOf(user);
+          switchTurn(room_id,index,io,socket);
+      }
+    }
+    delete mapping[socket_id];
+    room.lobby.splice(room.lobby.indexOf(user),1);
+    if(room.lobby.length==0)
+    {
+      delete rooms[room_id];
+    }
+    io.to(room_id).emit("disconnected",user);
   })
 });
 
-function userRank(lobby){
+const isClose = (word1,word2)=>{
+  let count = 0;
+  for(let i =0;i<word1.length;i++){
+    if(word1[i]!=word2[i])
+    {
+      count++;
+    }
+    if(count==2)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+const startDrawing = (room_id,socket_id,word,io,socket)=>{
+    let room = rooms[room_id];
+    room.vote_kick=[];
+    room.word=word;
+    room.choose_word= true;
+    room.time=31;
+    room.round_end = false;
+    io.to(room_id).emit("clear-canvas");
+    io.to(socket_id).emit("draw-word",word);
+    word=word.replace(/[a-z0-9A-Z]/g,"-");
+    socket.broadcast.to(room_id).emit("guess-word",word);
+    let interval = setInterval(()=>{
+      let room2 = rooms[room_id];
+      if(isEmpty(room2))
+      {
+        clearInterval();
+      }
+      else{
+      let time2 = room2.time;
+      room2.time = time2 - 1;
+      if(room2.round_end)
+      {
+        clearInterval(interval);
+      }
+      if(room2.time==0)
+      {
+        clearInterval(interval);
+        roundResult(room_id,io,socket);
+      }
+      }
+    },1000)
+}
+
+
+const findUser = (room,user_id) =>{
+  let usr = {};
+  room.lobby.forEach(user=>{
+    if(user.user_id == user_id)
+    {
+      usr = user;
+      return;
+    }
+  })
+  return usr;
+}
+
+const findUserDrawing = (room_id) =>{
+  let room = rooms[room_id]
+  let usr = {};
+  room.lobby.forEach(user=>{
+    if(user.drawing)
+    {
+      usr = user;
+      return;
+    }
+  })
+  return usr;
+}
+
+
+
+const roundResult = (room_id,io,socket)=>{
+  let room = rooms[room_id];
+  let word = room.word;
+  let scores = room.scores;
+  let max = 300;
+  let result = {word,place:[]};
+  let drawing_index = -1;
+  room.lobby.map((user,i)=>{
+    let index = scores.indexOf(user.user_id)+1;
+    let plus=0;
+    if(index!=0)
+    {
+        plus = max-(index*30);
+        user.point+=max-(index*30);
+    }else if(user.drawing)
+    {
+      plus = scores.length*30;
+      user.point+=plus;
+      drawing_index = i
+      user.drawing=false;
+    }
+    result.place.push({user_id:user.user_id,user_name:user.user_name,plus});
+  })
+  result.place.sort((a,b)=>{
+      return a.plus>b.plus;
+  })
+  room.lobby = lobbyRank(room.lobby);
+  result.lobby = room.lobby;
+  io.to(room_id).emit("round-result",result);
+  setTimeout(()=>{
+        switchTurn(room_id,drawing_index,io,socket);
+  },6000)
+}
+
+
+
+const startGame = async(room,io,socket)=>{
+  let room_id = room.id;
+  let lobby =room.lobby;
+  if(!room.start&&room.lobby.length>1)
+  {
+    room.start = true;
+    room.words = [...words];
+    room.vote_kick=[];
+    await newRound(room,io);
+    let user_draw = lobby[lobby.length-1];
+    chooseWord(room,user_draw,io,socket)
+  }
+}
+
+const switchTurn = async(room_id,index,io,socket)=>{
+  let room = rooms[room_id];
+  if(isEmpty(room))
+  {
+    return;
+  }
+  room.scores = [];
+  room.canvas= [];
+  if(index==0&&room.round==3)
+  {
+    let lobby = lobbyRank(room.lobby);
+    io.to(room_id).emit("game-result",lobby);
+    setTimeout(()=>{
+      room.start=false;
+      startGame(room,io,socket);
+    },7000)
+  }
+  else if(index==0&&room.round<3)
+  {
+    room.round++;
+    next_user = room.lobby[room.lobby.length-1];
+    await newRound(room,io);
+    chooseWord(room,next_user,io,socket);
+  }
+  else{
+    next_user = room.lobby[index-1];
+    chooseWord(room,next_user,io,socket);
+  }
+}
+
+const chooseWord = (room,user,io,socket)=>{
+  room.word="";
+  room.choose_word=false;
+  user.drawing=true;
+  let room_id = room.id;
+  let words = room.words;
+  let choose = [];
+  for(let i = 1;i<=3 ;i++)
+  {
+        let word = words[Math.floor(Math.random()*words.length)];
+        choose.push(word);
+        words.splice(words.indexOf(word),1);
+  }
+  io.to(user.user_id).emit("choose-word",choose);
+  io.to(room_id).emit("wait-choose-word",user.user_name);
+  // let time = room.time;
+  let timer = 10;
+  let interval = setInterval(()=>{
+    timer--;
+    let room2 = rooms[room_id];
+    if(room2.choose_word){
+      clearInterval(interval);
+    }
+    else if(timer==0&&!room2.choose_word)
+    {
+      let word = choose[0];
+      startDrawing(room_id,user.user_id,word,io,socket);
+      clearInterval(interval);
+    }
+  },1000)
+}
+
+const newRound = (room,io)=>{
+  let round =room.round;
+  let room_id = room.id;
+  io.to(room_id).emit("new-round",round);
+  return new Promise((res,rej)=>{
+    setTimeout(()=>{
+      res(true);
+    },2000);
+  })
+}
+
+function lobbyRank(lobby){
   let rank = 1;
   let lobby2 = [...lobby];
   while(lobby2.length>0)
@@ -197,6 +435,27 @@ function userRank(lobby){
   }
   return lobby;
 }
+const userRank = (lobby)=>{
+  let rank = 1;
+  let lowest_player = lobby[0];
+  if(isEmpty(lowest_player))
+  {
+    return rank;
+  }
+  lobby.forEach(item=>{
+    if(item.point<lowest_player.point)
+    {
+      lowest_player=item;
+    }
+  })
+  if(lowest_player.point==0)
+  {
+    return lowest_player.rank;
+  }
+  else{
+    return lowest_player.rank+1;
+  }
+}
 
 function randomId(){
   return Math.random().toString(36).substr(2, 5);
@@ -215,6 +474,7 @@ function getRandom(arr, n) {
     }
     return result;
 }
+
 
 
 const PORT = process.env.PORT || 8797;

@@ -46,9 +46,9 @@ h3 {
 }
 .content {
   display: flex;
-  width:100%;
+  width:99%;
+  margin: 0 auto;
   height: 100%;
-  padding: 10px;
   align-items: center;
   justify-content: center;
   flex-direction: column;
@@ -62,9 +62,40 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  position: relative;
+    margin: 10px 0;
+}
+.word-text{
+    font-weight: bold;
   font-size: 30px;
-  margin: 10px 0;
+}
+
+.time-and-round{
+  position: absolute;
+  left: 10px;
+  display: flex;
+}
+.time-container{
+  margin: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: black;
+  position: relative;
+}
+
+.time-text{
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+}
+.round{
+  color: black;
+  font-weight: bold;
+  font-size: 18px;
+  margin: 0;
 }
 
 .play-container{
@@ -123,12 +154,26 @@ h3 {
   height: 100%;
   border-radius: 5px;
   background-color: white;
+  display: flex;
+  flex-direction: column;
 }
 .users-container{
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+.vote-kick
+{
+  display: none;
+  width: 100%;
+  text-align: center;
+  background-color: red;
+  padding: 5px 0;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
 }
 .user-item{
   display: flex;
@@ -175,10 +220,11 @@ h3 {
 
 .whiteboard {
   height: 100%;
-  width: 90%;
+  width: 100%;
+  /* cursor: url("/storage/img/cursor.png"),auto; */
 }
 .colors{
-  display: flex;
+  display: none;
   align-items: center;
 }
 
@@ -213,12 +259,13 @@ h3 {
   background-color: orange;
 }
 
-
-#form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
-#input:focus { outline: none; }
-
-#messages { margin: 0; padding: 0; width: 100%;height: 90%; background-color: white; overflow-y: auto; }
-
+.messages { 
+  margin: 0; 
+  padding: 0; width: 100%;
+  height: 90%; 
+  background-color: white; 
+  overflow-y: auto; 
+}
 
 .game_start_modal{
   position: absolute;
@@ -309,7 +356,7 @@ h3 {
 }
 
 
-.word_modal{
+.words-modal{
   position: absolute;
   top: 50%;
   left: 50%;
@@ -335,37 +382,37 @@ h3 {
     }
     100%{
       opacity: 1;
-      top: 20%;
+      top: 23%;
     }
 }
 @-webkit-keyframes movedown2 {
     0% {
-        opacity: 1;
-        top:-100%;
-    }
-    100%{
-      opacity: 0;
-      top: 20%;
-    }
-}
-@-moz-keyframes movedown2 {
-   0% {
-        opacity: 1;
-        top:-100%;
-    }
-    100%{
-      opacity: 0;
-      top: 20%;
-    }
-}
-@-ms-keyframes movedown2 {
-  0% {
-        opacity: 1;
+        opacity: 0;
         top:-100%;
     }
     100%{
       opacity: 1;
-      top: 20%;
+      top: 23%;
+    }
+}
+@-moz-keyframes movedown2 {
+   0% {
+        opacity: 0;
+        top:-100%;
+    }
+    100%{
+      opacity: 1;
+      top: 23%;
+    }
+}
+@-ms-keyframes movedown2 {
+  0% {
+        opacity: 0;
+        top:-100%;
+    }
+    100%{
+      opacity: 1;
+      top: 23%;
     }
 }
 
@@ -383,7 +430,6 @@ h3 {
   width: 100%;
   height: 100%;
   background-color: #232223;
-  opacity: 0.7;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -393,3 +439,197 @@ h3 {
   font-weight: bold;
   font-size: 16px;
 }
+
+
+.round-result{
+  width: 50%;
+  height: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background-color: white;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  -webkit-animation: movedown3 0.5s ease-out forwards;
+  -moz-animation: movedown3 0.5s ease-out forwards;
+  -ms-animation: movedown3 0.5s ease-out forwards;
+  animation: movedown3 0.5s ease-out forwards;
+  animation-name:"movedown3";
+  animation-duration: 0.5s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.result-word{
+  font-weight: bold;
+  font-size: 17px;
+}
+
+.result-scores{
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-score-item{
+  width: 100%;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@keyframes movedown3 {
+    0% {
+        opacity: 0;
+        top:-100%;
+    }
+    100%{
+      opacity: 1;
+      top: 50%;
+    }
+}
+@-webkit-keyframes movedown3 {
+    0% {
+        opacity: 0;
+        top:-100%;
+    }
+    100%{
+      opacity: 1;
+      top: 50%;
+    }
+}
+@-moz-keyframes movedown3 {
+    0% {
+        opacity: 0;
+        top:-100%;
+    }
+    100%{
+      opacity: 1;
+      top: 50%;
+    }
+}
+@-ms-keyframes movedown3 {
+    0% {
+        opacity: 0;
+        top:-100%;
+    }
+    100%{
+      opacity: 1;
+      top: 50%;
+    }
+}
+
+.game-result-container{
+  width: 70%;
+  background-color: white;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.top-users{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bottom-users{
+  display: flex;
+  align-items: center;
+}
+
+
+.top-user{
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.top-rank{
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.top-user-info{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.top-user-img{
+  width: 50px;
+  height: 60px;
+  object-fit: cover;
+}
+
+.top-user-name{
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.bottom-user{
+  display: flex;
+  align-items: center;
+}
+
+.bottom-rank{
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.bottom-user-info{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bottom-user-img{
+  width: 30px;
+  height: 40px;
+  object-fit: cover;
+}
+
+.bottom-user-name{
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.kick-container{
+  width: 400px;
+  height: 200px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background-color: white;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-animation: movedown3 0.5s ease-out forwards;
+  -moz-animation: movedown3 0.5s ease-out forwards;
+  -ms-animation: movedown3 0.5s ease-out forwards;
+  animation: movedown3 0.5s ease-out forwards;
+  animation-name:"movedown3";
+  animation-duration: 0.5s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.kick-message{
+  font-size: 14px;
+  margin: 0;
+}
+
+.kick-close{
+  position: absolute;
+  top: 5px; 
+  right: 5px;
+  cursor: pointer;
+}
+

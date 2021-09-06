@@ -18,7 +18,7 @@ $(document).ready(function(){
       alert("name must have aleast 3 characters");
     }
     else{
-          socket.emit('new-user',user_name);
+          socket.emit('new-user',{user_name,eye:rand_eye,mouth:rand_mouth,color:rand_color});
     }
   });
   $("body").on("keypress",".user-name",function(e){
@@ -51,7 +51,7 @@ $(document).ready(function(){
       alert("name must have aleast 3 characters");
     }
     else{
-          socket.emit('new-user',user_name);
+          socket.emit('new-user',{user_name,eye:rand_eye,mouth:rand_mouth,color:rand_color});
     }
   })
 
@@ -75,16 +75,13 @@ $(document).ready(function(){
   socket.on("enter",(data)=>{
     let {room,user,canvas_data} = data;
     let user_html = "";
+
     room.lobby.forEach((item)=>{
-    if(item.user_id==user.user_id)
-      {
+      let eyePos = getPosition(item.eye,-48);
+      let mouthPos = getPosition(item.mouth,-48);
+      let colorPos = getPosition(item.color,-48);
       user_html += `<div id="user-${item.user_id}" class="user-item"><p class="rank">#${item.rank}</p>
-      <div class="user-info"><p class="user-name" style="color:blue">${item.user_name}</p><p class="point">Point: ${item.point}</p></div><img class="user-img" src="/storage/img/players/${item.image}"></div>`
-      }
-      else{
-        user_html += `<div id="user-${item.user_id}" class="user-item"><p class="rank">#${item.rank}</p><div class="user-info"><p class="user-name">${item.user_name}</p><p class="point">Point: ${user.point}</p></div>
-        <img class="user-img" src="/storage/img/players/${item.image}"></div>`
-      }
+      <div class="user-info"><p class="user-name" style="color:${item.user_id==user.user_id?"blue":"black"}">${item.user_name}</p><p class="point">Point: ${item.point}</p></div><div class="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div></div>`
     })
     let html = `<div class="word-container"><div class="time-and-round"><div class="time-container"><p class="time-text">${room.time}</p></div><p class="round">Round ${room.round}</p></div><p class="word-text">${room.word}</p></div><div class="play-container"><div class="left"><div class="users-container">${user_html}</div><div class="vote-kick">Vote Kick</div></div><div class="center"><canvas class="whiteboard"></canvas><div class="colors"><div class="color black"></div><div class="color yellow"></div><div class="color red"></div><div class="color blue"></div><div class="color green"></div><div class="color lightblue"></div><div class="color orange"></div></div></div><div class="right"><div class="messages"></div><input class="form-control user-chat"/></div></div>`;
         $(".content").html(html);
@@ -124,8 +121,11 @@ $(document).ready(function(){
     $(".messages").append(message_html);
     $(".messages").scrollTop($(".messages").height());
     let user_html = "";
+    let eyePos = getPosition(user.eye,-48);
+    let mouthPos = getPosition(user.mouth,-48);
+    let colorPos = getPosition(user.color,-48);
     user_html += `<div id="user-${user.user_id}" class="user-item"><p class="rank">#${user.rank}</p>
-      <div class="user-info"><p class="user-name">${user.user_name}</p><p class="point">Point: ${user.point}</p></div><img class="user-img" src="/storage/img/players/${user.image}"></div>`
+      <div class="user-info"><p class="user-name">${user.user_name}</p><p class="point">Point: ${user.point}</p></div><div class="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div></div>`
     $(".users-container").append(user_html);
   })
 
@@ -216,12 +216,15 @@ $(document).ready(function(){
     let top_html="";
     let bottom_html = "";
     lobby.map((user,index)=>{
+      let eyePos = getPosition(user.eye,-48);
+      let mouthPos = getPosition(user.mouth,-48);
+      let colorPos = getPosition(user.color,-48);
       if(index<3)
       {
-        top_html+=`<div class="top-user"><p class="top-rank">#${user.rank}</p><div class="top-user-info"><img class="top-user-img" src="/storage/img/players/${user.image}"</div><p class="top-user-name">${user.user_name}</p></div></div>`
+        top_html+=`<div class="top-user"><p class="top-rank">#${user.rank}</p><div class="top-user-info"><div="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div><p class="top-user-name">${user.user_name}</p></div></div>`
       }
       else{
-        bottom_html+=`<div class="bottom-user"><p class="bottom-rank">#${user.rank}</p><div class="bottom-user-info"><img class="bottom-user-img" src="/storage/img/players/${user.image}"</div><p class="bottom-user-name">${user.user_name}</p></div></div>`
+        bottom_html+=`<div class="bottom-user"><p class="bottom-rank">#${user.rank}</p><div class="bottom-user-info"><div="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div><p class="bottom-user-name">${user.user_name}</p></div></div>`
       }
     })
     let result_html = `<div class="center-overlay"><div class="game-result-container"><div class="top-users">${top_html}</div><div class="bottom-users">${bottom_html}</div></div></div>`

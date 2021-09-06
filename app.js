@@ -19,10 +19,10 @@ const db = mongoose.connection;
 
 dotenv.config()
 
-mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true }).then(() =>{});
-db.on('error', (err) => {
-    console.log('DB connection error:', err.message);
-})
+// mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true }).then(() =>{});
+// db.on('error', (err) => {
+//     console.log('DB connection error:', err.message);
+// })
 
 app.set("view engine", "ejs");
 app.use(bodyParser.json());
@@ -39,8 +39,6 @@ app.get('/', (req, res) => {
 //const lobby = [];
 const rooms = {};
 const mapping = {};
-const users_colors = ["black","orange","lightblue","red","lightgreen","#232223","cyan","grey"];
-const users_images = ["player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif","player-1.gif"];
 const words = ["bird","dog","cat","bat","lion","pencil","smile","sleep","fly","optopus","shoe","mask","punch","ice cream","fox","toilet","penquin","chicken","plane","winter","sun","mountain","fish","butter","baseball","soccer","swimming","pillow","jacket","window","cry","cloud","Statue of Liberty","Eiffel Tower","Table Tennis","apple","banana","cherry","kite","towel","beach","bench","library","book","net","map","art","internet","president","math","police","fire fighter","surfing","waiter","boss","rose"];
 io.on('connection', (socket) => {
   let socket_id = socket.id;
@@ -95,7 +93,9 @@ io.on('connection', (socket) => {
 
 
 
-  socket.on("new-user",user_name=>{
+  socket.on("new-user",(user_info)=>{
+    let {user_name,eye,mouth,color} = user_info;
+    console.log(eye,mouth,color);
     if(user_name.trim()==""||user_name.trim().length<3)
     {
       io.to(socket_id).emit("alert","name must have aleast 3 characters");
@@ -103,7 +103,7 @@ io.on('connection', (socket) => {
     }
     io.to(socket_id).emit('loading'); 
     let flag = 0;
-    let user = {user_id:socket_id,user_name,color:"black",image:"player-1.gif",point:0,drawing:false};
+    let user = {user_id:socket_id,user_name,eye,mouth,color,point:0,drawing:false};
     let room = {};
     for(let key in rooms)
     {
@@ -122,6 +122,7 @@ io.on('connection', (socket) => {
       room = {id:room_id,time:"30",round:"1",canvas:[],scores:[],word:"",lobby,start:false,vote_kick:[]};
       rooms[room_id]=room;
     }
+    console.log(room);
     //room.lobby= lobbyRank(room.lobby);
     socket.join(room.id);
     mapping[socket_id]=room.id;  
@@ -342,7 +343,7 @@ const switchTurn = async(room_id,index,io,socket)=>{
   }
   room.scores = [];
   room.canvas= [];
-  if(index==0&&room.round==3)
+  if(index==0&&room.round==1)
   {
     let lobby = lobbyRank(room.lobby);
     io.to(room_id).emit("game-result",lobby);

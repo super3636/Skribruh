@@ -46,7 +46,7 @@ h3 {
 }
 .content {
   display: flex;
-  width:99%;
+  width:96%;
   margin: 0 auto;
   height: 100%;
   align-items: center;
@@ -150,10 +150,9 @@ h3 {
   }
 }
 .left{
-  width: 20%;
+  width: 15%;
   height: 100%;
   border-radius: 5px;
-  background-color: white;
   display: flex;
   flex-direction: column;
 }
@@ -179,11 +178,12 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: space-around;
+  background-color: white;
 }
 
 .user-img{
-  width: 40px;
-  height: 50px;
+  width: 30px;
+  height: 40px;
   object-fit: cover;
 }
 .rank{
@@ -201,7 +201,7 @@ h3 {
 }
 
 .center{
-  width: 48%;
+  width: 53%;
   height: 100%;
   border-radius: 5px;
   background-color: white;
@@ -633,3 +633,77 @@ h3 {
   cursor: pointer;
 }
 
+.user-character-container{
+  display: flex;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  border:1px solid #d3d3d3;
+  margin: 5px 0;
+  background-color: #f5f4f4;
+}
+
+.avatarArrows{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.avatarArrow{
+  flex: 0 0 auto;
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    background-image: url("/storage/img/players/arrow.gif");
+    background-size: 200%;
+    background-repeat: no-repeat;
+}
+
+.avatarArrowLeft{
+  background-position: 0 0;
+}
+
+.avatarArrowRight{
+  background-position: 0 100%;
+}
+.avatarContainer{
+  width: 96px;
+  height: 96px;
+}
+
+.avatar-fit{
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.user-avatar{
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.user-color{
+    position: absolute;
+    background-image: url("/storage/img/players/colors.gif");
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+}
+
+.user-eyes{
+    position: absolute;
+    background-image: url("/storage/img/players/eyes.gif");
+    background-repeat: no-repeat;
+      width: 100%;
+    height: 100%;
+
+}
+
+.user-mouth{
+    position: absolute;
+    background-image: url("/storage/img/players/mouths.gif");
+    background-repeat: no-repeat;
+      width: 100%;
+    height: 100%;
+
+}

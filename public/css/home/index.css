@@ -1,6 +1,6 @@
 .user-form
 {
-	width: 30%;
+	width: 40%;
 	min-height: 100px;
 	background-color: white;
 	padding: 5px;
@@ -14,4 +14,13 @@
 
 .btn{
 	width: 100%;
+}
+
+.user-form .user-name{
+	font-weight: lighter;
+}
+
+.play-button{
+	padding: 10px;
+	margin: 5px 0;
 }

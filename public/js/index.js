@@ -17,6 +17,10 @@ $(document).ready(function(){
     {
       alert("name must have aleast 3 characters");
     }
+    else if($.trim(user_name).length>20)
+    {
+      alert("name must have less than 20 characters");
+    }
     else{
           socket.emit('new-user',{user_name,eye:rand_eye,mouth:rand_mouth,color:rand_color});
     }
@@ -50,21 +54,35 @@ $(document).ready(function(){
     {
       alert("name must have aleast 3 characters");
     }
+    else if($.trim(user_name).length>20)
+    {
+      alert("name must have less than 20 characters");
+    }
     else{
           socket.emit('new-user',{user_name,eye:rand_eye,mouth:rand_mouth,color:rand_color});
     }
   })
 
-  $("body").on("click",".vote-kick",function(){
+  $("body").on("click",".vote-kick",function(e){
+        e.preventDefault();
     socket.emit('vote-kick');
   })
 
   $("body").on("click",".kick-close",function(e){
+        e.preventDefault();
     $(".kick-container").css("display","none");
   })
-  $("body").on("scroll",function(e){
-    console.log(e);
+
+  $("body").on("click",".thumb-up",function(e){
+    e.preventDefault();
+    socket.emit("thumb-up");
   })
+
+  $("body").on("click",".thumb-down",function(e){
+    e.preventDefault();
+    socket.emit("thumb-down");
+  })
+
   socket.on("alert",message=>{
     alert(message);
   })
@@ -75,15 +93,17 @@ $(document).ready(function(){
   socket.on("enter",(data)=>{
     let {room,user,canvas_data} = data;
     let user_html = "";
+    let scores = room.scores;
+    let player_drawing = null;
 
-    room.lobby.forEach((item)=>{
+    room.lobby.map((item,index)=>{
       let eyePos = getPosition(item.eye,-48);
       let mouthPos = getPosition(item.mouth,-48);
       let colorPos = getPosition(item.color,-48);
-      user_html += `<div id="user-${item.user_id}" class="user-item"><p class="rank">#${item.rank}</p>
-      <div class="user-info"><p class="user-name" style="color:${item.user_id==user.user_id?"blue":"black"}">${item.user_name}</p><p class="point">Point: ${item.point}</p></div><div class="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div></div>`
+      user_html += `<div id="user-${item.user_id}" class="user-item ${scores.indexOf(item.user_id)!=-1?"correct-user":""}" style="background-color:${index%2==0?"white":"cyan"}"><p class="rank">#${item.rank}</p>
+      <div class="user-info"><p class="user-name" style="color:${item.user_id==user.user_id?"blue":"black"}">${item.user_name.length>10?item.user_name.slice(0,8)+"...":item.user_name}</p><p class="point">Points: ${item.point}</p></div><div class="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div><div class="user-message"><div class="chat-message-container"><div class="arrow"></div><div class="chat-message-sub"><p class="chat-message"></p><div class="thumb-up-message"></div><div class="thumb-down-message"></div></div></div></div>${item.drawing?"<div class='pen'></div>":""}</div>`
     })
-    let html = `<div class="word-container"><div class="time-and-round"><div class="time-container"><p class="time-text">${room.time}</p></div><p class="round">Round ${room.round}</p></div><p class="word-text">${room.word}</p></div><div class="play-container"><div class="left"><div class="users-container">${user_html}</div><div class="vote-kick">Vote Kick</div></div><div class="center"><canvas class="whiteboard"></canvas><div class="colors"><div class="color black"></div><div class="color yellow"></div><div class="color red"></div><div class="color blue"></div><div class="color green"></div><div class="color lightblue"></div><div class="color orange"></div></div></div><div class="right"><div class="messages"></div><input class="form-control user-chat"/></div></div>`;
+    let html = `<div class="word-container"><div class="time-and-round"><div class="timer-container"><div class="timer">${room.time}</div></div><p class="round">Round ${room.round} of ${room.total_round}</p></div><p class="word-text">${room.word}</p></div><div class="play-container"><div class="left"><div class="users-container">${user_html}</div><div class="vote-kick">Vote Kick</div></div><div class="center"><canvas class="whiteboard"></canvas><div class="colors"><div class="color black"></div><div class="color yellow"></div><div class="color red"></div><div class="color blue"></div><div class="color green"></div><div class="color lightblue"></div><div class="color orange"></div></div></div><div class="right"><div class="messages"></div><input class="form-control user-chat"/></div></div>`;
         $(".content").html(html);
         canvas = document.getElementsByClassName("whiteboard")[0];
         context = canvas.getContext('2d');
@@ -96,7 +116,7 @@ $(document).ready(function(){
         canvas.addEventListener('touchstart', onMouseDown, false);
         canvas.addEventListener('touchend', onMouseUp, false);
         canvas.addEventListener('touchcancel', onMouseUp, false);
-         canvas.addEventListener('scroll', onScroll, false);
+         canvas.addEventListener('mousewheel', onScroll, false);
         canvas.addEventListener('touchmove', throttle(onMouseMove, 10), false);
         socket.on('drawing', onDrawingEvent);
         for (var i = 0; i < colors.length; i++){
@@ -109,12 +129,51 @@ $(document).ready(function(){
         })
         let msg_html =`<p style="color:orange"><strong>${user.user_name}: </strong> has join lobby`;
         $(".messages").append(msg_html);
+        if(room.start && room.word)
+        {
+          let time = room.time;
+          $(".vote-kick").css("display","block");
+          let thumb_html = "<div class='thumb-container'><div class='thumb-up'></div><div class='thumb-down'></div></div>";
+          $('.center').append(thumb_html);
+          interval = setInterval(() => {
+            time--;
+            $(".timer").text(time);
+            if(time==0)
+            {
+              clearInterval(interval);
+            }
+          }, 1000) 
+        }
   })
   socket.on("user-chat",(data)=>{
-    let {user_name,message} = data;
+    let {user_id,user_name,message} = data;
     let message_html = `<p><strong>${user_name}:</strong> ${message}</p>`;
     $(".messages").append(message_html);
     $(".messages").scrollTop($(".messages").height());
+    let user_message =  $(`#user-${user_id}`).find(".chat-message-container");
+    let user_text = user_message.find(".chat-message");
+    if(message.length>30)
+    {
+     message = message.splice(0,30)+"...";
+    }
+    user_text.text(message);
+    user_text.css("display","block");
+    user_message.css("display","flex");
+    if(user_id == socket.id)
+    {
+    $('.thumb-container').css("display","none");
+    setTimeout(()=>{
+      user_message.css("display","none");
+      user_text.css("display","none");
+      $(".thumb-container").css("display","flex");
+    },3000)
+    }
+    else{
+      setTimeout(()=>{
+        user_message.css("display","none");
+        user_text.css("display","none");
+      },3000)
+    }
   })
   socket.on("join-lobby",(user)=>{
     let message_html = `<p><strong>${user.user_name}:</strong> has join lobby</p>`;
@@ -124,14 +183,15 @@ $(document).ready(function(){
     let eyePos = getPosition(user.eye,-48);
     let mouthPos = getPosition(user.mouth,-48);
     let colorPos = getPosition(user.color,-48);
-    user_html += `<div id="user-${user.user_id}" class="user-item"><p class="rank">#${user.rank}</p>
-      <div class="user-info"><p class="user-name">${user.user_name}</p><p class="point">Point: ${user.point}</p></div><div class="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div></div>`
+    let users_count = $(".user-item").length;
+    user_html += `<div id="user-${user.user_id}" class="user-item" style="background-color:${users_count%2==0?"white":"cyan"}"><p class="rank">#${user.rank}</p>
+      <div class="user-info"><p class="user-name">${item.user_name.length>10?item.user_name.slice(0,8)+"...":item.user_name}</p><p class="point">Points: ${user.point}</p></div><div class="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div><div class="user-message"><div class="chat-message-container"><div class="arrow"></div><div class="chat-message-sub"><p class="chat-message"></p><div class="thumb-up-message"></div><div class="thumb-down-message"></div></div></div></div></div>`
     $(".users-container").append(user_html);
   })
 
   socket.on("correct-answer",user=>{
     let message = `<p style="color:orange">${user.user_name} has guess the word`;
-    $(`#user-${user.user_id}`).css("background","orange");
+    $(`#user-${user.user_id}`).addClass("correct-user");
     $(".messages").append(message);
   })
   socket.on("new-round",round=>{
@@ -147,7 +207,7 @@ $(document).ready(function(){
       word_modal +=`<div class="word">${word}</div>`;
     })
     word_modal +="</div>";
-    $(".content").append(word_modal);
+    $(".center").append(word_modal);
     $("body").on("click",".word",function(){
       let word = $(this).text();
       socket.emit("choose-word",word);
@@ -160,46 +220,42 @@ $(document).ready(function(){
   })
   socket.on("guess-word",(word)=>{
     $(".vote-kick").css("display","block");
-    let time = 31;
-    let hide = "";
+    let thumb_html = "<div class='thumb-container'><div class='thumb-up'></div><div class='thumb-down'></div></div>";
+    $('.center').append(thumb_html);
     $(".word-text").text(word);
     $(".center-overlay").remove();
-     interval =  setInterval(() => {
-      time--;
-      $(".time-text").text(time);
-      if(time==0)
-      {
-          clearInterval(interval);
-      }
-    }, 1000)
   })
   socket.on("draw-word",word=>{
-    let time = 31;
     drawing_turn=true;
     $(".colors").css("display","flex");
-    $(".word-text").text(word);
     $(".words-modal").remove();
     $(".center-overlay").remove();
     $(".word-text").text(word);
+    $(".vote-kick").css("display","none");
+    $(".thumb-container").css("display","none");
+  })
+  socket.on("round-start",({time,user_draw_id})=>{
+    $(".pen").remove();
+    let pen_html = `<div class="pen"></div>`
+    $(`#user-${user_draw_id}`).append(pen_html);
+    context.clearRect(0, 0, canvas.width, canvas.height);
     interval =  setInterval(() => {
       time--;
-      $(".time-text").text(time);
+      $(".timer").text(time);
       if(time==0)
       {
         clearInterval(interval);
       }
     }, 1000)
   })
-  socket.on("clear-canvas",()=>{
-    context.clearRect(0, 0, canvas.width, canvas.height);
-  })
   socket.on("round-result",result=>{
     clearInterval(interval);
     drawing_turn=false;
     $(".vote-kick").css("display","none");
     $(".colors").css("display","none");
-    $(".user-item").css("background-color","white");
+    $(".user-item").removeClass("correct-user");
     $(".center-overlay").remove();
+    $(".thumb-container").remove();
     let score_html = "";
     result.place.forEach(item=>{
       score_html += `<div class="result-score-item"><p class="user-name" style="color:${item.user_id==socket.id?"lightblue":"black"}">${item.user_name}</p><p class="plus">+${item.plus}</div>`
@@ -216,15 +272,20 @@ $(document).ready(function(){
     let top_html="";
     let bottom_html = "";
     lobby.map((user,index)=>{
-      let eyePos = getPosition(user.eye,-48);
-      let mouthPos = getPosition(user.mouth,-48);
-      let colorPos = getPosition(user.color,-48);
       if(index<3)
       {
-        top_html+=`<div class="top-user"><p class="top-rank">#${user.rank}</p><div class="top-user-info"><div="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div><p class="top-user-name">${user.user_name}</p></div></div>`
+        let size = "720px 720px";
+        let eyePos = getPosition(user.eye,-72);
+        let mouthPos = getPosition(user.mouth,-72);
+        let colorPos = getPosition(user.color,-72);
+        top_html+=`<div class="top-user"><p class="top-rank">#${user.rank}</p><div class="top-user-info"><div class="top-user-avatar"><div class="user-color" style="background-size: ${size};background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: ${size};background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: ${size};background-position:${mouthPos.left} ${mouthPos.top}"></div></div><p class="top-user-name">${user.user_name}</p></div></div>`
       }
       else{
-        bottom_html+=`<div class="bottom-user"><p class="bottom-rank">#${user.rank}</p><div class="bottom-user-info"><div="user-avatar"><div class="user-color" style="background-size: 480px 480px;background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: 480px 480px;background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: 480px 480px;background-position:${mouthPos.left} ${mouthPos.top}"></div></div><p class="bottom-user-name">${user.user_name}</p></div></div>`
+        let size = "480px 480px";
+        let eyePos = getPosition(user.eye,-48);
+        let mouthPos = getPosition(user.mouth,-48);
+        let colorPos = getPosition(user.color,-48);
+        bottom_html+=`<div class="bottom-user"><p class="bottom-rank">#${user.rank}</p><div class="bottom-user-info"><div class="bottom-user-avatar"><div class="user-color" style="background-size: ${size};background-position:${colorPos.left} ${colorPos.top}"></div><div class="user-eyes" style="background-size: ${size};background-position:${eyePos.left} ${eyePos.top}"></div><div class="user-mouth" style="background-size: ${size};background-position:${mouthPos.left} ${mouthPos.top}"></div></div><p class="bottom-user-name">${user.user_name}</p></div></div>`
       }
     })
     let result_html = `<div class="center-overlay"><div class="game-result-container"><div class="top-users">${top_html}</div><div class="bottom-users">${bottom_html}</div></div></div>`
@@ -249,8 +310,53 @@ $(document).ready(function(){
 
   socket.on("kick-success",(user)=>{
     $(`#user-${user.user_id}`).remove();
-    let message_html = `<p style="color:orange">${user.user_name} has been kick</p>`;
+    let message_html = `<p style="color:orange">${user.user_name} had been kick</p>`;
     $(".messages").append(message_html);
+  })
+
+  socket.on("thumb-up",(user_id)=>{
+    let user_message = $(`#user-${user_id}`).find(".chat-message-container");
+    let user_thumb_up =  user_message.find(".thumb-up-message");
+    user_message.css("display","flex");
+    user_thumb_up.css("display","block");
+    if(user_id == socket.id)
+    {
+    $('.thumb-container').css("display","none");
+    setTimeout(()=>{
+      user_message.css("display","none");
+      user_thumb_up.css("display","none");
+      $(".thumb-container").css("display","flex");
+    },3000)
+    }
+    else{
+      setTimeout(()=>{
+        user_message.css("display","none");
+        user_thumb_up.css("display","none");
+      },3000)
+    }
+  })
+
+  socket.on("thumb-down",(user_id)=>{
+    let user_message =  $(`#user-${user_id}`).find(".chat-message-container");
+    let user_thumb_down =  user_message.find(".thumb-down-message");
+    user_message.css("display","flex");
+    user_thumb_down.css("display","block");
+    $('.thumb-container').css("display","none");
+    if(user_id == socket.id)
+    {
+      $('.thumb-container').css("display","none");
+      setTimeout(()=>{
+      user_message.css("display","none");
+      user_thumb_down.css("display","none");
+      $(".thumb-container").css("display","flex");
+      },3000)
+    }
+    else{
+      setTimeout(()=>{
+        user_message.css("display","none");
+        user_thumb_down.css("display","none");
+      },3000)
+    }
   })
 
   socket.on("disconnected",(user)=>{
@@ -308,8 +414,11 @@ function drawLine(x0, y0, x1, y1, color,lineWidth, emit){
     current.y = e.pageY||e.touches[0].pageY;
   }
   function onScroll(e){
-    console.log("ASdasd");
-    console.log(e);
+    if (e.wheelDelta > 0) {
+   
+    } else {
+        
+    }
   }
   function onColorUpdate(e){
     current.color = e.target.className.split(' ')[1];

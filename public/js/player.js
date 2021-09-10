@@ -1,11 +1,11 @@
 var rand_eye=0;
 var rand_mouth=0;
 var rand_color=0;
-
 $(document).ready(function(){
 	const eyes = 31;
 	const colors = 18;
 	const mouths = 24
+	const specials = 5;
 	rand_eye = Math.floor(Math.random()*eyes);
 	let eyePos = getPosition(rand_eye,-96);
 	$(".user-eyes").css("background-position",`${eyePos.left} ${eyePos.top}`);

@@ -39,7 +39,7 @@ app.get('/', (req, res) => {
 //const lobby = [];
 const rooms = {};
 const mapping = {};
-const words = ["bird","dog","cat","bat","lion","pencil","smile","sleep","fly","optopus","shoe","mask","punch","ice cream","fox","toilet","penquin","chicken","plane","winter","sun","mountain","fish","butter","baseball","soccer","swimming","pillow","jacket","window","cry","cloud","Statue of Liberty","Eiffel Tower","Table Tennis","apple","banana","cherry","kite","towel","beach","bench","library","book","net","map","art","internet","president","math","police","fire fighter","surfing","waiter","boss","rose"];
+const words = ["bird","dog","cat","bat","lion","pencil","sleep","optopus","shoe","mask","punch","ice cream","fox","toilet","penquin","chicken","plane","sun","mountain","fish","butter","baseball","soccer","swimming","jacket","window","cry","cloud","Statue of Liberty","Eiffel Tower","Table Tennis","apple","banana","cherry","kite","towel","beach","bench","library","book","net","map","art","internet","president","math","police","fire fighter","surfing","waiter","rose","rain","clock","battery","night","video game","eraser","bomb","santa","guitar","bass","drum","keyboard","piano","calculator","egg","donut","crossline","chocolate","sugar","schedule","snack","picnic","letter","tv show","coffee","river","tent","fishing","rock","fire","wine","magic","snail","candy","jelly fish","whale","finding nemo","dragon","phoenix","beer","spoon","blushes","bill","remote","bear","lock","chess","virus","glass","glass","short","larva","dolphin","mango","tomato","duck","rabbit","cage","lose","win","cooler","mabel","eagle","owl","judge","zebra"];
 io.on('connection', (socket) => {
   let socket_id = socket.id;
   socket.on("on-chat",message=>{
@@ -50,7 +50,7 @@ io.on('connection', (socket) => {
     let correct_word = rooms[room_id].word;
     if(user.drawing)
     {
-       io.to(socket_id).emit('user-chat',{user_name:user.user_name,message:`Cannot chat when drawing`}); 
+       io.to(socket_id).emit('user-chat',{user_id:user.user_id,user_name:user.user_name,message:`Cannot chat when drawing`}); 
     }
     else{
     if(message.toLowerCase()==correct_word.toLowerCase()&&correct_word!="")
@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
           if(room.lobby.length==place+1)
           {
             room.round_end=true;
-            roundResult(room_id,io,socket);
+            roundResult(room_id,io);
           }
       }
     }
@@ -84,21 +84,23 @@ io.on('connection', (socket) => {
         }
       }
       else{
-        io.to(room_id).emit('user-chat',{user_name:user.user_name,message});
+        io.to(room_id).emit('user-chat',{user_id:user.user_id,user_name:user.user_name,message});
       }
     }
   }
   })
   
-
-
-
   socket.on("new-user",(user_info)=>{
     let {user_name,eye,mouth,color} = user_info;
     console.log(eye,mouth,color);
     if(user_name.trim()==""||user_name.trim().length<3)
     {
       io.to(socket_id).emit("alert","name must have aleast 3 characters");
+      return;
+    }
+    else if(user_name.trim().length>20)
+    {
+      io.to(socket_id).emit("alert","name must have less than 20 characters");
       return;
     }
     io.to(socket_id).emit('loading'); 
@@ -108,7 +110,7 @@ io.on('connection', (socket) => {
     for(let key in rooms)
     {
       let room_item = rooms[key];
-      if(room_item.lobby&&room_item.lobby.length<9)
+      if(room_item.lobby&&room_item.lobby.length<8)
       {
         user.rank = userRank(room_item.lobby);
         room_item.lobby.push(user);
@@ -119,10 +121,9 @@ io.on('connection', (socket) => {
     {
       room_id = randomId();
       lobby = [{...user,rank:1}];
-      room = {id:room_id,time:"30",round:"1",canvas:[],scores:[],word:"",lobby,start:false,vote_kick:[]};
+      room = {id:room_id,time:"80",round:"1",canvas:[],scores:[],word:"",lobby,start:false,vote_kick:[],total_round:3};
       rooms[room_id]=room;
     }
-    console.log(room);
     //room.lobby= lobbyRank(room.lobby);
     socket.join(room.id);
     mapping[socket_id]=room.id;  
@@ -135,12 +136,11 @@ io.on('connection', (socket) => {
       io.to(socket_id).emit("wait-choose-word",user_draw.user_name);
     }
     socket.broadcast.to(room.id).emit("join-lobby",user);
-    startGame(room,io,socket);
+    startGame(room,io);
   })
   socket.on("choose-word",word=>{      
     let room_id = mapping[socket_id];
-
-    startDrawing(room_id,socket_id,word,io,socket);
+    startDrawing(room_id,socket_id,word,io);
   })
 
   socket.on('drawing', (data) => {
@@ -175,11 +175,35 @@ io.on('connection', (socket) => {
           io.to(room.id).emit("kick-success",user_drawing);
           delete mapping[user_drawing.user_id];
           room.lobby.splice(room.lobby.indexOf(user_drawing),1);
-          switchTurn(room.id,index,io,socket);
+          switchTurn(room.id,index,io);
         }
       }
     }
   })
+
+  socket.on("thumb-up",function(){
+    let room_id = mapping[socket_id];
+    let room = rooms[room_id];
+    let user = findUser(room,socket_id);
+    if(!user.drawing)
+    {
+    io.to(room_id).emit("thumb-up",socket_id);
+    }
+  })
+
+
+
+  socket.on("thumb-down",function(){
+    let room_id = mapping[socket_id];
+    let room = rooms[room_id];
+    let user = findUser(room,socket_id);
+    if(!user.drawing)
+    {
+    io.to(room_id).emit("thumb-down",socket_id);
+    }
+  })
+
+
   socket.on("disconnect",function(socket){
     let room_id = mapping[socket_id];
     if(isEmpty(room_id))
@@ -192,11 +216,11 @@ io.on('connection', (socket) => {
     {
       if(room.word)
       {
-        roundResult(room_id,io,socket);
+        roundResult(room_id,io);
       }
       else{
           let index = room.lobby.indexOf(user);
-          switchTurn(room_id,index,io,socket);
+          switchTurn(room_id,index,io);
       }
     }
     delete mapping[socket_id];
@@ -224,17 +248,18 @@ const isClose = (word1,word2)=>{
   return true;
 }
 
-const startDrawing = (room_id,socket_id,word,io,socket)=>{
+
+const startDrawing = (room_id,socket_id,word,io)=>{
     let room = rooms[room_id];
     room.vote_kick=[];
     room.word=word;
     room.choose_word= true;
-    room.time=31;
+    room.time=80;
     room.round_end = false;
-    io.to(room_id).emit("clear-canvas");
+    io.to(room_id).emit("round-start",{time:room.time,user_draw_id:socket_id});
+    let word2 =word.replace(/[a-z0-9A-Z]/g,"-");
+    io.to(room_id).emit("guess-word",word2);
     io.to(socket_id).emit("draw-word",word);
-    word=word.replace(/[a-z0-9A-Z]/g,"-");
-    socket.broadcast.to(room_id).emit("guess-word",word);
     let interval = setInterval(()=>{
       let room2 = rooms[room_id];
       if(isEmpty(room2))
@@ -251,7 +276,7 @@ const startDrawing = (room_id,socket_id,word,io,socket)=>{
       if(room2.time==0)
       {
         clearInterval(interval);
-        roundResult(room_id,io,socket);
+        roundResult(room_id,io);
       }
       }
     },1000)
@@ -285,7 +310,7 @@ const findUserDrawing = (room_id) =>{
 
 
 
-const roundResult = (room_id,io,socket)=>{
+const roundResult = (room_id,io)=>{
   let room = rooms[room_id];
   let word = room.word;
   let scores = room.scores;
@@ -308,20 +333,20 @@ const roundResult = (room_id,io,socket)=>{
     }
     result.place.push({user_id:user.user_id,user_name:user.user_name,plus});
   })
-  result.place.sort((a,b)=>{
-      return a.plus>b.plus;
-  })
-  room.lobby = lobbyRank(room.lobby);
-  result.lobby = room.lobby;
+  result.place.sort((a,b)=>a.plus<b.plus?1:a.plus>b.plus?-1:0);
+  let lobby_rank = lobbyRank(room.lobby);
+  result.lobby = lobby_rank;
+  room.lobby = lobby_rank;
+  room.scores = [];
   io.to(room_id).emit("round-result",result);
   setTimeout(()=>{
-        switchTurn(room_id,drawing_index,io,socket);
+        switchTurn(room_id,drawing_index,io);
   },6000)
 }
 
 
 
-const startGame = async(room,io,socket)=>{
+const startGame = async(room,io)=>{
   let room_id = room.id;
   let lobby =room.lobby;
   if(!room.start&&room.lobby.length>1)
@@ -331,11 +356,11 @@ const startGame = async(room,io,socket)=>{
     room.vote_kick=[];
     await newRound(room,io);
     let user_draw = lobby[lobby.length-1];
-    chooseWord(room,user_draw,io,socket)
+    chooseWord(room,user_draw,io)
   }
 }
 
-const switchTurn = async(room_id,index,io,socket)=>{
+const switchTurn = async(room_id,index,io)=>{
   let room = rooms[room_id];
   if(isEmpty(room))
   {
@@ -346,10 +371,19 @@ const switchTurn = async(room_id,index,io,socket)=>{
   if(index==0&&room.round==1)
   {
     let lobby = lobbyRank(room.lobby);
+    lobby = sortRank(lobby);
     io.to(room_id).emit("game-result",lobby);
     setTimeout(()=>{
       room.start=false;
-      startGame(room,io,socket);
+      room.round=1;
+      room.lobby.forEach(item=>{
+        item.point=0;
+        item.rank=1;
+      })
+      room.start=false;
+      room.word = "";
+      room.words = words;
+      startGame(room,io);
     },7000)
   }
   else if(index==0&&room.round<3)
@@ -357,15 +391,15 @@ const switchTurn = async(room_id,index,io,socket)=>{
     room.round++;
     next_user = room.lobby[room.lobby.length-1];
     await newRound(room,io);
-    chooseWord(room,next_user,io,socket);
+    chooseWord(room,next_user,io);
   }
   else{
     next_user = room.lobby[index-1];
-    chooseWord(room,next_user,io,socket);
+    chooseWord(room,next_user,io);
   }
 }
 
-const chooseWord = (room,user,io,socket)=>{
+const chooseWord = (room,user,io)=>{
   room.word="";
   room.choose_word=false;
   user.drawing=true;
@@ -378,10 +412,11 @@ const chooseWord = (room,user,io,socket)=>{
         choose.push(word);
         words.splice(words.indexOf(word),1);
   }
+  room.words = words;
   io.to(user.user_id).emit("choose-word",choose);
   io.to(room_id).emit("wait-choose-word",user.user_name);
   // let time = room.time;
-  let timer = 10;
+  let timer = 7;
   let interval = setInterval(()=>{
     timer--;
     let room2 = rooms[room_id];
@@ -391,7 +426,7 @@ const chooseWord = (room,user,io,socket)=>{
     else if(timer==0&&!room2.choose_word)
     {
       let word = choose[0];
-      startDrawing(room_id,user.user_id,word,io,socket);
+      startDrawing(room_id,user.user_id,word,io);
       clearInterval(interval);
     }
   },1000)
@@ -436,6 +471,11 @@ function lobbyRank(lobby){
   }
   return lobby;
 }
+
+function sortRank(lobby){
+  return lobby.sort((a,b)=>a.rank>b.rank?1:a.rank<b.rank?-1:0);
+}
+
 const userRank = (lobby)=>{
   let rank = 1;
   let lowest_player = lobby[0];

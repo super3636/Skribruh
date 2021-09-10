@@ -52,6 +52,7 @@ h3 {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
 }
 
 .word-container{
@@ -63,7 +64,7 @@ h3 {
   align-items: center;
   justify-content: center;
   position: relative;
-    margin: 10px 0;
+  margin: 10px 0;
 }
 .word-text{
     font-weight: bold;
@@ -74,28 +75,33 @@ h3 {
   position: absolute;
   left: 10px;
   display: flex;
+  align-items: center;
 }
-.time-container{
+.timer-container{
   margin: 0;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background-color: black;
   position: relative;
 }
 
-.time-text{
-  color: white;
+.timer{
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
+  font-size: 24px;
+  text-align: center;
+  width: 64px;
+  height: 64px;
+  line-height: 72px;
+  font-weight: 700;
+  top: -10px;
+    background-image: url('/storage/img/players/clock.gif');
+    background-size: contain;
 }
 .round{
   color: black;
   font-weight: bold;
   font-size: 18px;
-  margin: 0;
+  margin: 0 10px;
 }
 
 .play-container{
@@ -109,13 +115,11 @@ h3 {
 
 .header{
   width: 100%;
-  max-height: 100px !important;
+  max-height: 90px !important;
 }
 
 .logo{
-  width: 350px;
-  height: 100px;
-  object-fit: cover;
+  height: 100%;
 }
 
 .lds-hourglass {
@@ -178,7 +182,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  background-color: white;
+  position: relative;
 }
 
 .user-img{
@@ -221,7 +225,7 @@ h3 {
 .whiteboard {
   height: 100%;
   width: 100%;
-  /* cursor: url("/storage/img/cursor.png"),auto; */
+ /*  cursor: url("/storage/img/cursor.png") 25 15,auto; */
 }
 .colors{
   display: none;
@@ -382,7 +386,7 @@ h3 {
     }
     100%{
       opacity: 1;
-      top: 23%;
+      top: 60%;
     }
 }
 @-webkit-keyframes movedown2 {
@@ -392,7 +396,7 @@ h3 {
     }
     100%{
       opacity: 1;
-      top: 23%;
+      top: 60%;
     }
 }
 @-moz-keyframes movedown2 {
@@ -402,7 +406,7 @@ h3 {
     }
     100%{
       opacity: 1;
-      top: 23%;
+      top: 60%;
     }
 }
 @-ms-keyframes movedown2 {
@@ -412,7 +416,7 @@ h3 {
     }
     100%{
       opacity: 1;
-      top: 23%;
+      top: 60%;
     }
 }
 
@@ -443,7 +447,6 @@ h3 {
 
 .round-result{
   width: 50%;
-  height: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -534,12 +537,13 @@ h3 {
 .top-users{
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
 }
 
 .bottom-users{
   display: flex;
   align-items: center;
+    justify-content: space-around;
 }
 
 
@@ -682,6 +686,17 @@ h3 {
   height: 48px;
 }
 
+.top-user-avatar{
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.bottom-user-avatar{
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
 .user-color{
     position: absolute;
     background-image: url("/storage/img/players/colors.gif");
@@ -703,7 +718,92 @@ h3 {
     position: absolute;
     background-image: url("/storage/img/players/mouths.gif");
     background-repeat: no-repeat;
-      width: 100%;
+    width: 100%;
     height: 100%;
+}
 
+.pen{
+  width: 25px;
+  height: 40px;
+  position: absolute;
+  top: 10%;
+  right: 30%;
+  background: url("/storage/img/players/pen.gif");
+}
+
+.thumb-container{
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+}
+
+.thumb-up{
+  margin: 0 5px;
+  background: url("/storage/img/players/thumbsup.gif");
+  width: 40px;
+  height: 40px;
+  background-size: contain;
+  cursor: pointer;
+}
+.thumb-down{
+  margin: 0 5px;
+  background: url("/storage/img/players/thumbsdown.gif");
+  width: 40px;
+  height: 40px;
+  background-size: contain;
+  cursor: pointer;
+}
+.user-message{
+  position: absolute;
+  top: 10px;
+  left: 190px;
+  z-index: 5;
+  display: flex;
+}
+
+.chat-message-container{
+  margin-left: 10px;
+  height: 40px;
+  display: none;
+  align-items: center;
+}
+
+.chat-message-sub{
+  background-color: lightblue;
+ border-radius: 5px;
+}
+.arrow{
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right:5px solid lightblue;
+}
+
+.chat-message{
+  display: none;
+  padding: 5px 10px;
+}
+
+.thumb-up-message{
+   margin-left: 6px;
+  background: url("/storage/img/players/thumbsup.gif");
+  width: 40px;
+  height: 40px;
+  background-size: contain;
+ display: none;
+}
+
+.thumb-down-message{
+  margin-left: 6px;
+  background: url("/storage/img/players/thumbsdown.gif");
+  width: 40px;
+  height: 40px;
+  background-size: contain;
+  display: none;
+}
+
+.correct-user{
+  background-color: orange !important;
 }

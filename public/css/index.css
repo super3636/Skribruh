@@ -11,6 +11,7 @@ body {
    background-image: url("/storage/img/background.jpg");
    display: flex;
    flex-direction: column;
+   overflow-x: hidden;
 }
 a {
   text-decoration: none;
@@ -208,11 +209,9 @@ h3 {
   width: 53%;
   height: 100%;
   border-radius: 5px;
-  background-color: white;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
 }
 .right{
   width: 30%;
@@ -223,19 +222,54 @@ h3 {
 }
 
 .whiteboard {
-  height: 100%;
+  height: 120%;
   width: 100%;
- /*  cursor: url("/storage/img/cursor.png") 25 15,auto; */
+  background-color: white;
+  cursor: url("/storage/img/cursor.png") 20 20,default;
 }
-.colors{
+
+.material{
   display: none;
+  margin: 10px auto;
+}
+
+.colors{
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  margin: 0 5px;
+}
+
+.color-line{
+  display: flex;
 }
 
 .color{
   cursor: pointer;
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
+}
+
+.item-material{
+  width: 40px;
+  height: 40px;
+  background: cyan;
+  margin: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+
+.pick-color{
+  width: 40px;
+  height: 40px;
+  margin: 0 5px;
+}
+
+.color:hover{
+  border: 2px solid black;
 }
 
 .black{
@@ -363,9 +397,9 @@ h3 {
 .words-modal{
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 40%;
   transform: translate(-50%,-50%);
-  width: 50%;
+  width: 30%;
   z-index:3;
   -webkit-animation: movedown2 0.5s ease-out forwards;
   -moz-animation: movedown2 0.5s ease-out forwards;
@@ -429,14 +463,16 @@ h3 {
 
 .center-overlay{
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #232223;
+  top: 50%;
+  left: 40%;
+  transform: translate(-50%,-50%);
+  border-radius: 5px;
   display: flex;
+  width: 500px;
+  height: 400px;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 .center-message{
   color: white;
@@ -806,4 +842,84 @@ h3 {
 
 .correct-user{
   background-color: orange !important;
+}
+
+.pen-img{
+  width: 25px;
+  height: 35px;
+  background: url("/storage/img/players/pen.gif");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.fill-img{
+    width: 30px;
+  height: 30px;
+  background: url("/storage/img/players/filltool.gif");
+    background-size: contain;
+      background-repeat: no-repeat;
+}
+
+.eraser-img{
+   width: 30px;
+  height: 30px;
+    background: url("/storage/img/players/eraser.gif");
+    background-size: contain;
+      background-repeat: no-repeat;
+}
+
+.clear-img{
+   width: 30px;
+  height: 30px;
+    background: url("/storage/img/players/clear.gif");
+    background-size: contain;
+      background-repeat: no-repeat;
+}
+
+#canvasDiv{
+  background-color: white;
+}
+
+.line-size-container{
+  display: flex;
+}
+
+.line-size{
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  cursor: pointer;
+  margin: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.small-line-dot{
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: black;
+}
+
+.normal-line-dot{
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+    background-color: black;
+}
+
+.large-line-dot{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+    background-color: black;
+}
+
+
+.huge-line-dot{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+    background-color: black;
 }

@@ -92,7 +92,6 @@ io.on('connection', (socket) => {
   
   socket.on("new-user",(user_info)=>{
     let {user_name,eye,mouth,color} = user_info;
-    console.log(eye,mouth,color);
     if(user_name.trim()==""||user_name.trim().length<3)
     {
       io.to(socket_id).emit("alert","name must have aleast 3 characters");
@@ -147,6 +146,10 @@ io.on('connection', (socket) => {
     let room_id = mapping[socket_id];
     let room = rooms[room_id]
     let user = findUser(room,socket_id);
+    if(isEmpty(user))
+    {
+      return;
+    }
     if(user.drawing)
     {
       room.canvas.push(data);
@@ -203,7 +206,21 @@ io.on('connection', (socket) => {
     }
   })
 
+  socket.on("clear-canvas",function(){
+     let room_id = mapping[socket_id];
+    io.to(room_id).emit("clear-canvas");
 
+  })
+  socket.on("fill",function(colorLayer){
+    let room_id = mapping[socket_id];
+    let room = rooms[room_id];
+    if(isEmpty(room_id))
+    {
+      return;
+    }
+    room.canvas.push({tool:"fill",colorLayer});
+    socket.broadcast.to(room_id).emit("fill",colorLayer);
+  })
   socket.on("disconnect",function(socket){
     let room_id = mapping[socket_id];
     if(isEmpty(room_id))
@@ -212,19 +229,23 @@ io.on('connection', (socket) => {
     }
     let room = rooms[room_id];
     let user = findUser(room,socket_id);
-    if(user.drawing)
+    let index = room.lobby.indexOf(user);
+    room.lobby.splice(index,1);
+    if(room.lobby.length==1)
+    {
+      gameResult(room_id,io);
+    }
+    else if(user.drawing)
     {
       if(room.word)
       {
         roundResult(room_id,io);
       }
       else{
-          let index = room.lobby.indexOf(user);
           switchTurn(room_id,index,io);
       }
     }
     delete mapping[socket_id];
-    room.lobby.splice(room.lobby.indexOf(user),1);
     if(room.lobby.length==0)
     {
       delete rooms[room_id];
@@ -285,6 +306,10 @@ const startDrawing = (room_id,socket_id,word,io)=>{
 
 const findUser = (room,user_id) =>{
   let usr = {};
+  if(!room)
+  {
+    return;
+  }
   room.lobby.forEach(user=>{
     if(user.user_id == user_id)
     {
@@ -368,23 +393,9 @@ const switchTurn = async(room_id,index,io)=>{
   }
   room.scores = [];
   room.canvas= [];
-  if(index==0&&room.round==1)
+  if(index==0&&room.round==3)
   {
-    let lobby = lobbyRank(room.lobby);
-    lobby = sortRank(lobby);
-    io.to(room_id).emit("game-result",lobby);
-    setTimeout(()=>{
-      room.start=false;
-      room.round=1;
-      room.lobby.forEach(item=>{
-        item.point=0;
-        item.rank=1;
-      })
-      room.start=false;
-      room.word = "";
-      room.words = words;
-      startGame(room,io);
-    },7000)
+    gameResult(room_id,io);
   }
   else if(index==0&&room.round<3)
   {
@@ -397,6 +408,26 @@ const switchTurn = async(room_id,index,io)=>{
     next_user = room.lobby[index-1];
     chooseWord(room,next_user,io);
   }
+}
+
+const gameResult = (room_id,io)=>{
+  let room = rooms[room_id];
+  let lobby = room.lobby;
+  lobby = lobbyRank(room.lobby);
+  lobby = sortRank(lobby);
+  io.to(room_id).emit("game-result",lobby);
+    setTimeout(()=>{
+      room.start=false;
+      room.round=1;
+      room.lobby.forEach(item=>{
+        item.point=0;
+        item.rank=1;
+      })
+      room.start=false;
+      room.word = "";
+      room.words = words;
+      startGame(room,io);
+    },7000)
 }
 
 const chooseWord = (room,user,io)=>{
@@ -420,6 +451,10 @@ const chooseWord = (room,user,io)=>{
   let interval = setInterval(()=>{
     timer--;
     let room2 = rooms[room_id];
+    if(isEmpty(room2))
+    {
+      return;
+    }
     if(room2.choose_word){
       clearInterval(interval);
     }

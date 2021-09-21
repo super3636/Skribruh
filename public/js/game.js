@@ -451,6 +451,7 @@ $(document).ready(function(){
   socket.on("game-result",lobby=>{
     let top_html="";
     let bottom_html = "";
+    clearInterval(interval);
     lobby.map((user,index)=>{
       if(index<3)
       {

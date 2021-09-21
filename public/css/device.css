@@ -1,0 +1,18 @@
+@media screen and (max-width: 600px) {
+ 	.user-form{
+ 		width: 80%;
+ 		margin: 10px auto;
+ 	}
+ 	.content{
+ 		justify-content: flex-start;
+ 	}
+ 	.user-info{
+ 		display: none;
+ 	}
+ 	.rank{
+ 		display: none;
+ 	}
+ 	.user-message{
+ 		left: 50px;
+ 	}
+}

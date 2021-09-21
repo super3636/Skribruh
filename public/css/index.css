@@ -231,6 +231,7 @@ h3 {
 .material{
   display: none;
   margin: 10px auto;
+  flex-wrap: wrap;
 }
 
 .colors{
